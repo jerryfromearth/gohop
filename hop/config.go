@@ -14,6 +14,8 @@ type HopServerConfig struct {
     Key string
     FixMSS bool
     MorphMethod string
+    Up string
+    Down string
 }
 
 // Client Config
@@ -28,6 +30,8 @@ type HopClientConfig struct {
     MorphMethod string
     Redirect_gateway bool
     Net_gateway []string
+    Up string
+    Down string
 }
 
 type HopConfig struct {

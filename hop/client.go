@@ -22,6 +22,7 @@ import (
     "net"
     "os"
     "os/signal"
+    "os/exec"
     "syscall"
     "time"
     "fmt"
@@ -30,6 +31,7 @@ import (
     mrand "math/rand"
     "github.com/bigeagle/water"
     "sync/atomic"
+    "strings"
 )
 
 var net_gateway, net_nic string
@@ -128,6 +130,18 @@ func NewClient(cfg HopClientConfig) error {
     res := <-hopClient.handshakeDone
     if res == 0 {
         return errors.New("Handshake Fail")
+    }
+
+    if cfg.Up != "" {
+        logger.Info(cfg.Up)
+        cmdline := strings.Split(cfg.Up, " ")
+        if len(cmdline) >= 1 {
+            cmd := exec.Command(cmdline[0], cmdline[1:]...)
+            cmd.Run()
+        } else {
+            cmd := exec.Command(cmdline[0])
+            cmd.Run()
+        }
     }
 
     routeDone := make(chan bool)
@@ -242,9 +256,11 @@ func (clt *HopClient) handleUDP(server string) {
 
     // forward iface frames to network
     go func() {
+        // disabled := false
         for {
             hp := <-clt.toNet
             hp.setSid(clt.sid)
+
             // logger.Debug("New iface frame")
             // dest := waterutil.IPv4Destination(frame)
             // logger.Debug("ip dest: %v", dest)
@@ -256,9 +272,9 @@ func (clt *HopClient) handleUDP(server string) {
 
     buf := make([]byte, IFACE_BUFSIZE)
     for {
-        //logger.Debug("waiting for udp packet")
+        // logger.Debug("waiting for udp packet")
         n, err := udpConn.Read(buf)
-        //logger.Debug("New UDP Packet, len: %d", n)
+        // logger.Debug("New UDP Packet, len: %d", n)
         if err != nil {
             logger.Error(err.Error())
             return
@@ -379,6 +395,18 @@ func (clt *HopClient) cleanUp() {
     signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
     <-c
     logger.Info("Cleaning Up")
+
+    if clt.cfg.Down != "" {
+        logger.Info(clt.cfg.Down)
+        cmdline := strings.Split(clt.cfg.Down, " ")
+        if len(cmdline) >= 1 {
+            cmd := exec.Command(cmdline[0], cmdline[1:]...)
+            cmd.Run()
+        } else {
+            cmd := exec.Command(cmdline[0])
+            cmd.Run()
+        }
+    }
 
     if clt.cfg.Redirect_gateway {
         delRoute("0.0.0.0/1")
