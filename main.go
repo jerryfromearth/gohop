@@ -21,6 +21,7 @@ package main
 import (
     "flag"
     "fmt"
+    "runtime"
     "github.com/bigeagle/gohop/hop"
     "github.com/bigeagle/gohop/logging"
     "os"
@@ -49,6 +50,9 @@ func main() {
     checkerr := func(err error) {
         if err != nil {
             logger.Error(err.Error())
+            trace := make([]byte, 1024)
+            count := runtime.Stack(trace, true)
+            logger.Error("Stack of %d bytes: %s", count, trace)
             os.Exit(1)
         }
     }
@@ -61,11 +65,13 @@ func main() {
 
     icfg, err := hop.ParseHopConfig(cfgFile)
     logger.Debug("%v", icfg)
+    logger.Debug("checking")
     checkerr(err)
 
     switch cfg := icfg.(type) {
     case hop.HopServerConfig:
         err := hop.NewServer(cfg)
+        logger.Debug("checking")
         checkerr(err)
     case hop.HopClientConfig:
         err := hop.NewClient(cfg)

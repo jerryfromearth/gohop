@@ -73,6 +73,7 @@ func NewServer(cfg HopServerConfig) error {
 
     cipher, err = newHopCipher([]byte(cfg.Key))
     if err != nil {
+        logger.Debug("hi")
         return err
     }
 
@@ -93,12 +94,14 @@ func NewServer(cfg HopServerConfig) error {
 
     iface, err := newTun("")
     if err != nil {
+        logger.Debug("hi")
         return err
     }
     hopServer.iface = iface
     ip, subnet, err := net.ParseCIDR(cfg.Addr)
     err = setTunIP(iface, ip, subnet)
     if err != nil {
+        logger.Debug("hi")
         return err
     }
     hopServer.ipnet = &net.IPNet{ip, subnet.Mask}
@@ -142,9 +145,9 @@ func NewServer(cfg HopServerConfig) error {
     go func() {
         for {
             hp := <-hopServer.toIface
-            // logger.Debug("New Net packet to device")
+            logger.Debug("New Net packet to device")
             _, err := iface.Write(hp.payload)
-            // logger.Debug("n: %d, len: %d", n, len(hp.payload))
+            //logger.Debug("n: %d, len: %d", n, len(hp.payload))
             if err != nil {
                 logger.Error(err.Error())
                 return
@@ -232,13 +235,13 @@ func (srv *HopServer) forwardFrames() {
     for {
         select {
         case pack := <-srv.fromIface:
-            // logger.Debug("New iface Frame")
+            logger.Debug("New iface Frame")
             // first byte is left for opcode
             frame := pack[HOP_HDR_LEN:]
             dest := waterutil.IPv4Destination(frame).To4()
             mkey := ip4_uint64(dest)
 
-            // logger.Debug("ip dest: %v", dest)
+            logger.Debug("ip dest: %v", dest)
             if hpeer, found := srv.peers[mkey]; found {
                 srv.bufferToClient(hpeer, pack)
             } else {
@@ -249,7 +252,7 @@ func (srv *HopServer) forwardFrames() {
 
             hPack, err := unpackHopPacket(packet.data)
             if err == nil {
-                // logger.Debug("New UDP Packet from: %v", packet.addr)
+                logger.Debug("New UDP Packet from: %v", packet.addr)
 
                 if handle_func, ok := pktHandle[hPack.Flag]; ok {
                     handle_func(packet, hPack)
@@ -306,6 +309,7 @@ func (srv *HopServer) bufferToClient(peer *HopPeer, buf []byte) {
 }
 
 func (srv *HopServer) handleKnock(u *udpPacket, hp *HopPacket) {
+    logger.Debug("Handle Knock")
     sid := uint64(binary.BigEndian.Uint32(hp.payload[:4]))
     logger.Debug("port knock from client %v, sid: %d", u.addr, sid)
     sid = (sid << 32) & uint64(0xFFFFFFFF00000000)
@@ -321,6 +325,7 @@ func (srv *HopServer) handleKnock(u *udpPacket, hp *HopPacket) {
 }
 
 func (srv *HopServer) handleHandshake(u *udpPacket, hp *HopPacket) {
+    logger.Debug("Handle Handshake")
     sid := uint64(binary.BigEndian.Uint32(hp.payload[:4]))
     sid = (sid << 32) & uint64(0xFFFFFFFF00000000)
     logger.Debug("handshake from client %v, sid: %d", u.addr, sid)
@@ -376,6 +381,7 @@ func (srv *HopServer) handleHandshake(u *udpPacket, hp *HopPacket) {
 }
 
 func (srv *HopServer) handleHandshakeAck(u *udpPacket, hp *HopPacket) {
+    logger.Debug("Handle HandshakeAck")
     sid := uint64(binary.BigEndian.Uint32(hp.payload[:4]))
     sid = (sid << 32) & uint64(0xFFFFFFFF00000000)
     hpeer, ok := srv.peers[sid]
@@ -389,6 +395,7 @@ func (srv *HopServer) handleHandshakeAck(u *udpPacket, hp *HopPacket) {
 }
 
 func (srv *HopServer) handleDataPacket(u *udpPacket, hp *HopPacket) {
+    logger.Debug("Handle dataPacket")
     sid := uint64(hp.Sid)
     sid = (sid << 32) & uint64(0xFFFFFFFF00000000)
 
@@ -400,6 +407,7 @@ func (srv *HopServer) handleDataPacket(u *udpPacket, hp *HopPacket) {
 }
 
 func (srv *HopServer) handleFinish(u *udpPacket, hp *HopPacket) {
+    logger.Debug("Handle Finish")
     sid := uint64(binary.BigEndian.Uint32(hp.payload[:4]))
     sid = (sid << 32) & uint64(0xFFFFFFFF00000000)
     logger.Info("releasing client %v, sid: %d", u.addr, sid)

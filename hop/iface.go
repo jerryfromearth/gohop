@@ -33,7 +33,7 @@ import (
     "strings"
 )
 
-var invalidAddr = errors.New("Invalid device ip address")
+//var invalidAddr = errors.New("Invalid device ip address")
 
 var tun_peer net.IP
 
@@ -53,6 +53,8 @@ func newTun(name string) (iface *water.Interface, err error) {
     if err != nil {
         return nil, err
     }
+    // test
+    //for {}
 
     return iface, nil
 }
@@ -61,7 +63,7 @@ func setTunIP(iface *water.Interface, ip net.IP, subnet *net.IPNet) (err error) 
     ip = ip.To4()
     logger.Debug("%v", ip)
     if ip[3] % 2 == 0 {
-        return invalidAddr
+        return fmt.Errorf("Invalid device ip address: %v", ip)
     }
 
     peer := net.IP(make([]byte, 4))
@@ -75,6 +77,7 @@ func setTunIP(iface *water.Interface, ip net.IP, subnet *net.IPNet) (err error) 
     logger.Info("ip %s", sargs)
     err = cmd.Run()
     if err != nil {
+    logger.Debug("%v", err)
         return err
     }
 
@@ -83,6 +86,8 @@ func setTunIP(iface *water.Interface, ip net.IP, subnet *net.IPNet) (err error) 
     cmd = exec.Command("ip", args...)
     logger.Info("ip %s", sargs)
     err = cmd.Run()
+    logger.Debug("%v", cmd)
+
     return err
 }
 
